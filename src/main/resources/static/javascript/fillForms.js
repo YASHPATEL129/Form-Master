@@ -40,6 +40,7 @@ function getFormName() {
         .selectpicker("refresh");
     },
     error: function (xhr) {
+      window.location = "/logIn";
       var errorMessage = xhr.responseJSON.error;
       console.log(errorMessage);
     },
@@ -50,6 +51,12 @@ $("#resetButton").on("click", function () {
   $("#NotFillForms").val("");
   $("#NotFillForms").selectpicker("refresh");
 });
+
+function closeButton() {
+  $(".showformfill").hide();
+  $("#NotFillForms").val("");
+  $("#NotFillForms").selectpicker("refresh");
+}
 
 $("#searchbtn").on("click", function () {
   var form_Id = $("#NotFillForms").val();
@@ -87,6 +94,7 @@ function loadFormQuestions(form_id) {
           clearBtn: true,
         });
         // Initialize Bootstrap Select
+        applyValidation();
         $(".selectpicker").selectpicker();
       } else {
         alert("Failed to load data");
@@ -140,10 +148,16 @@ function generateQuestionElement(question, questionNumber) {
       );
       break;
     case 4: // Single Textbox
-      questionHtml += generateTextInput(question.questionId);
+      questionHtml += generateTextInput(
+        question.questionId,
+        question.validateId
+      );
       break;
     case 5: // Multiline Textbox
-      questionHtml += generateTextareaInput(question.questionId);
+      questionHtml += generateTextareaInput(
+        question.questionId,
+        question.validateId
+      );
       break;
     case 6: // Single Select Dropdown
       questionHtml += generateDropdownHtml(
@@ -201,7 +215,7 @@ function generateForm(formData) {
                                  <div class="col-xl-12 col-lg-12 col-sm-12 col-xs-12 colmspadding">
                                     <a class="btn btn-success btn-padding mr-2" onclick="submitForm(${formData.id})"><i class="fa fa-floppy-o mr-2"></i>Submit</a>
                                     <a class="btn btn-success btn-padding mr-2"><i class="fa fa-print mr-2"></i>Print</a>
-                                    <a class="btn btn-success btn-padding"><i class="fa fa-times mr-2"></i>Cancel</a>
+                                    <a class="btn btn-success btn-padding" onclick="closeButton()"><i class="fa fa-times mr-2"></i>Cancel</a>
                                 </div>
                             </div>
                         </div>
@@ -243,26 +257,73 @@ function generateMultipleChoiceHtml(answers, questionId) {
   return html;
 }
 
-function generateTextInput(questionId) {
+function generateTextInput(questionId, validated) {
+  let validationClass = "";
+  switch (validated) {
+    case 1:
+      validationClass = "all-allowed";
+      break;
+    case 2:
+      validationClass = "only-numbers";
+      break;
+    case 3:
+      validationClass = "only-alphabets";
+      break;
+    case 4:
+      validationClass = "alphabets-numbers";
+      break;
+  }
   let inputId = `text-input-${questionId}`;
   return `<div class="form-group mb-0">
                 <div class="row pl-2 pr-2">
                   <div class="col-xl-7 col-lg-12 col-sm-12 col-xs-12 colmspadding">
-                    <input type="text" class="form-control" placeholder="Enter Your Answer" id="${inputId}" data-question-id="${questionId}">
+                    <input type="text" class="form-control ${validationClass}" placeholder="Enter Your Answer" id="${inputId}" data-question-id="${questionId}">
                   </div>
                 </div>
               </div>`;
 }
 
-function generateTextareaInput(questionId) {
+function generateTextareaInput(questionId, validated) {
+  let validationClass = "";
+  switch (validated) {
+    case 1:
+      validationClass = "all-allowed";
+      break;
+    case 2:
+      validationClass = "only-numbers";
+      break;
+    case 3:
+      validationClass = "only-alphabets";
+      break;
+    case 4:
+      validationClass = "alphabets-numbers";
+      break;
+  }
   let inputId = `textarea-input-${questionId}`;
   return `<div class="form-group mb-0">
                 <div class="row pl-2 pr-2">
                   <div class="col-xl-7 col-lg-12 col-sm-12 col-xs-12 colmspadding">
-                    <textarea class="form-control textareasize" placeholder="Enter Your Answer" id="${inputId}" data-question-id="${questionId}"></textarea>
+                    <textarea class="form-control textareasize ${validationClass}" placeholder="Enter Your Answer" id="${inputId}" data-question-id="${questionId}"></textarea>
                   </div>
                 </div>
               </div>`;
+}
+
+function applyValidation() {
+  $("input.form-control, textarea.form-control").on("input", function () {
+    let value = $(this).val();
+    const validationClass = $(this).attr("class");
+
+    if (validationClass.includes("only-numbers")) {
+      value = value.replace(/[^0-9]/g, "");
+    } else if (validationClass.includes("only-alphabets")) {
+      value = value.replace(/[^a-zA-Z]/g, "");
+    } else if (validationClass.includes("alphabets-numbers")) {
+      value = value.replace(/[^a-zA-Z0-9]/g, "");
+    }
+
+    $(this).val(value);
+  });
 }
 
 function generateDropdownHtml(answers, questionId) {
@@ -447,7 +508,6 @@ function getFormData() {
       formGroup && formGroup.getAttribute("data-require-answer") === "Yes";
     let answerValue = null;
     let value = null;
-    let isValid = true;
 
     switch (answerType) {
       case "1": // Simple text (non-input) answer
@@ -464,7 +524,7 @@ function getFormData() {
             value: null,
           });
         } else if (requireAnswer) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
@@ -481,7 +541,7 @@ function getFormData() {
             });
           });
         } else if (requireAnswer) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
@@ -498,7 +558,7 @@ function getFormData() {
           }
         }
         if (requireAnswer && !value) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
@@ -515,7 +575,7 @@ function getFormData() {
           }
         }
         if (requireAnswer && !value) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
@@ -529,7 +589,7 @@ function getFormData() {
             value: null,
           });
         } else if (requireAnswer) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
@@ -546,7 +606,7 @@ function getFormData() {
               });
             });
           } else if (requireAnswer) {
-            isValid = false;
+            allRequiredQuestionsAnswered = false;
           }
         }
         break;
@@ -564,17 +624,12 @@ function getFormData() {
           }
         }
         if (requireAnswer && !value) {
-          isValid = false;
+          allRequiredQuestionsAnswered = false;
         }
         break;
 
       default:
         break;
-    }
-
-    if (requireAnswer && !answerValue && !value) {
-      isValid = false;
-      allRequiredQuestionsAnswered = false;
     }
   });
 

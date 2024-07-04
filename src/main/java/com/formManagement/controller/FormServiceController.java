@@ -4,6 +4,7 @@ import com.formManagement.consts.ErrorKeys;
 import com.formManagement.consts.Message;
 import com.formManagement.exception.InvalidCredentialsException;
 import com.formManagement.param.CreateFormParam;
+import com.formManagement.param.PreviewAdminParam;
 import com.formManagement.param.UpdateFormRequest;
 import com.formManagement.response.GetFormIdResponse;
 import com.formManagement.response.Success;
@@ -172,6 +173,27 @@ public class FormServiceController {
         ResponseEntity.BodyBuilder respBuilder = ResponseEntity.ok();
         Success<?> success = new Success<>();
         success.setData( formService.completeFormPreview(request, formId));
+        success.setMessage(Message.DATA_GET_SUCCESSFUL);
+        return respBuilder.body(success);
+    }
+
+
+    @GetMapping("/getCompleteFormAdmin")
+    public ResponseEntity<Success<?>> getCompleteFormAdmin(){
+        ResponseEntity.BodyBuilder respBuilder = ResponseEntity.ok();
+        Success<?> success = new Success<>();
+        success.setData( formService.getCompleteFormAdmin());
+        success.setMessage(Message.DATA_GET_SUCCESSFUL);
+        return respBuilder.body(success);
+    }
+
+
+    @GetMapping("/formPreviewAdmin")
+    public ResponseEntity<Success<?>> completeFormPreviewAdmin(@RequestParam Long formId,
+                                                               @RequestParam Long userId){
+        ResponseEntity.BodyBuilder respBuilder = ResponseEntity.ok();
+        Success<?> success = new Success<>();
+        success.setData( formService.completeFormPreviewAdmin(formId , userId));
         success.setMessage(Message.DATA_GET_SUCCESSFUL);
         return respBuilder.body(success);
     }

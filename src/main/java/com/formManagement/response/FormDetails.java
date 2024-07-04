@@ -38,6 +38,7 @@ public class FormDetails {
         private Integer answerSelect;
         private String answerTypes;
         private List<AnswerDTO> answers;
+        private int validateId;
 
         @Data
         @AllArgsConstructor

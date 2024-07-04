@@ -43,6 +43,8 @@ public class UpdateFormRequest {
 
         private String textEnglish;
 
+            private int active;
+
     }
 
     @Data
@@ -61,6 +63,8 @@ public class UpdateFormRequest {
         private String requireAnswer;
 
         private Integer answerSelect;
+
+        private int validateId;
 
         private List<AnswerRequest> answers;
 

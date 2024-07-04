@@ -630,16 +630,15 @@
                                                 <div class="form-group">
                                                     <select class="selectpicker answercombo"
                                                         data-style="lineheight12 bg-transfer" data-live-search="true"
-                                                        data-title="Answer Should Be">
-                                                        <option value="0">All Character</option>
-                                                        <option value="1">Only Character</option>
-                                                        <option value="2">Only Alphabet</option>
-                                                        <option value="3">Alphabet & Number</option>
+                                                        data-title="Answer Should Be"
+                                                        id="validateDropdown">
+                                                        <option value="1">All Character</option>
+                                                        <option value="2">Only Character</option>
+                                                        <option value="3">Only Alphabet</option>
+                                                        <option value="4">Alphabet & Number</option>
                                                     </select>
                                                 </div>
                                             </div>
-
-                                         
                                         </div>
                                     </div>
                                 </div>

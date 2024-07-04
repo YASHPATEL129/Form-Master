@@ -17,7 +17,7 @@ public interface AccountService {
 
     AuthResponse signIn(SignInParam signInParam, HttpServletRequest request , HttpServletResponse response);
 
-    List<User> getAllUsers();
+    List<Object> getAllUsers();
 
     void deleteUser(Long id);
 
@@ -25,5 +25,7 @@ public interface AccountService {
 
     void updateUser(HttpServletRequest request,Long id ,String param, MultipartFile image ) throws IOException;
 
-    List<User> getAllUsersBySearch(String role, String searchValue);
+    List<Object> getAllUsersBySearch(String role, String searchValue);
+
+    void createUserByCSV(HttpServletRequest request, MultipartFile file) throws IOException;
 }

@@ -1,5 +1,6 @@
 package com.formManagement.filter;
 
+import com.formManagement.exception.UnauthorisedException;
 import com.formManagement.service.impl.UserDetailImpl;
 import com.formManagement.utils.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -37,14 +38,12 @@ public class JwtFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-
         try {
             jwtToken = authHeader.substring(7);
             userEmail = jwtUtil.extractUsername(jwtToken);
         } catch (Exception e) {
             logger.error("Invalid Authorization header format", e);
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid Authorization header format");
-            return;
+            throw new UnauthorisedException();
         }
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -56,6 +55,8 @@ public class JwtFilter extends OncePerRequestFilter {
                 );
                 token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(token);
+            }else {
+                throw new UnauthorisedException();
             }
         }
 

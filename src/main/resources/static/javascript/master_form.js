@@ -345,6 +345,7 @@ function fetchAndPopulateData() {
         }
       },
       error: function (error) {
+        window.location = "/logIn";
         console.error("Error fetching data:", error);
       },
     },
@@ -394,7 +395,6 @@ function valiedQuestion() {
   var questionName = $("#questionName").val().trim();
   var description = $("#description").val().trim();
   var answerSelect = $("#answerSelect").val().trim();
-  var requireAnswer = $("#reqans").val().trim();
 
   if (questionLabel == "") {
     toastr.error("Please enter Question Label");
@@ -410,6 +410,15 @@ function valiedQuestion() {
     return false;
   }
 
+  if ($("#validatans").is(":checked")) {
+    console.log($("#validatans").is(":checked"));
+    var validateId = $("#validateDropdown option:selected").val();
+    console.log(validateId);
+    if (validateId == "") {
+      toastr.error("Please enter validated");
+      return false;
+    }
+  }
   return true;
 }
 
@@ -428,6 +437,16 @@ function addRow() {
   var description = $("#description").val().trim();
   var answerSelect = $("#answerSelect").val().trim();
   var requireAnswer = $("#reqans").is(":checked") ? "Yes" : "No";
+  var validateId;
+  if (
+    $("#validatans").is(":checked") &&
+    (answerSelect == 4 || answerSelect == 5)
+  ) {
+    console.log($("#validatans").is(":checked"));
+    validateId = $("#validateDropdown option:selected").val();
+  } else {
+    validateId = 0;
+  }
 
   if (answerSelect == 1) {
     requireAnswer = "No"; // Ensure requireAnswer is "No" for answerSelect = 1
@@ -527,6 +546,7 @@ function addRow() {
     answerSelect: answerSelect,
     requireAnswer: requireAnswer,
     inputValues: inputValues,
+    validateId: validateId,
   };
 
   // Add the question object to the questionsArray
@@ -549,26 +569,28 @@ function addRow() {
   $("#formquestion_datatable").DataTable().row.add(newRow).draw();
 
   // Clear the form fields after adding the row
-  $("#questionLabel").val("");
-  $("#questionName").val("");
-  $("#description").val("");
-  $("#answerSelect").val("");
-  $("#reqans").prop("checked", false);
-  $("#answerSelect").selectpicker("refresh");
-  $(".addformquestion").modal("hide");
-  $(".multiselectdata").hide();
-  $(".multichoicedata").hide();
-  $(".singlechoicedata").hide();
-  $(".singleselectdata").hide();
-  $(".hidetextvalidation").hide();
-  $(".showanswershouldbe").hide();
-  $(".hidedatevalidation").hide();
-  $(".noansdisplaynone").show();
-  // Clear the values of the input fields
-  $('.singlechoicedata input[type="text"]').val("");
-  $('.multichoicedata input[type="text"]').val("");
-  $('.singleselectdata input[type="text"]').val("");
-  $('.multiselectdata input[type="text"]').val("");
+  // $("#questionLabel").val("");
+  // $("#questionName").val("");
+  // $("#description").val("");
+  // $("#answerSelect").val("");
+  // $("#reqans").prop("checked", false);
+  // $("#validatans").prop("checked", false);
+  // $("#answerSelect").selectpicker("refresh");
+  // $("#validateDropdown").selectpicker("refresh");
+  // $(".addformquestion").modal("hide");
+  // $(".multiselectdata").hide();
+  // $(".multichoicedata").hide();
+  // $(".singlechoicedata").hide();
+  // $(".singleselectdata").hide();
+  // $(".hidetextvalidation").hide();
+  // $(".showanswershouldbe").hide();
+  // $(".hidedatevalidation").hide();
+  // $(".noansdisplaynone").show();
+  // // Clear the values of the input fields
+  // $('.singlechoicedata input[type="text"]').val("");
+  // $('.multichoicedata input[type="text"]').val("");
+  // $('.singleselectdata input[type="text"]').val("");
+  // $('.multiselectdata input[type="text"]').val("");
   $(".addformquestion").modal("hide");
   cleanQuestion();
 }
@@ -685,6 +707,13 @@ function editQuestion(questionId) {
   $("#answerSelect").val(questionObject.answerSelect); // Set the answer type select element
   $("#answerSelect").selectpicker("refresh"); // Refresh the selectpicker to update the selected option
   $("#reqans").prop("checked", questionObject.requireAnswer === "Yes");
+  var validated = questionObject.validateId;
+  if (validated != 0) {
+    $("#validatans").prop("checked", true);
+    $(".showanswershouldbe").show();
+    $("#validateDropdown").val(validated);
+    $("#validateDropdown").selectpicker("refresh");
+  }
 
   var addNewRow =
     "<tr><td class='text-center border-0' width='5%'><i class='fa fa-arrow-right' aria-hidden='true'></i></td><td class='border-0 p-1'><div class='form-group mb-0'><input type='text' class='form-control' placeholder='Enter an answer choice in English'></div></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceadd'><i class='fa fa-plus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceremove'><i class='fa fa-minus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td></tr>";
@@ -734,6 +763,12 @@ function editQuestion(questionId) {
       }
 
       $(".multichoicedata").show();
+      break;
+    case "4": // No Answer
+      $(".hidetextvalidation").show();
+      break;
+    case "5": // No Answer
+      $(".hidetextvalidation").show();
       break;
     case "6": // Single Select Dropdown
       var singleSelectContainer = $(".singleselectdata tbody"); // Assuming tbody is used to contain rows
@@ -943,7 +978,10 @@ function cleanQuestion() {
   $("#description").val("");
   $("#answerSelect").val("");
   $("#reqans").prop("checked", false);
+  $("#validatans").prop("checked", false);
   $("#answerSelect").selectpicker("refresh");
+  $("#validateDropdown").val("");
+  $("#validateDropdown").selectpicker("refresh");
   // $(".addformquestion").modal("hide");
   $(".multiselectdata").hide();
   $(".multichoicedata").hide();
@@ -1016,9 +1054,9 @@ function loadFormQuestions(form_id) {
               question.id
             );
           } else if (question.answerSelect == 4) {
-            answersHTML = generateTextInput();
+            answersHTML = generateTextInput(question.validateId);
           } else if (question.answerSelect == 5) {
-            answersHTML = generateTextareaInput();
+            answersHTML = generateTextareaInput(question.validateId);
           } else if (question.answerSelect == 6) {
             answersHTML = generateSelectOptions(question.answers);
           } else if (question.answerSelect == 7) {
@@ -1060,6 +1098,7 @@ function loadFormQuestions(form_id) {
 
         // Insert the content into the modal
         $(".modalBody").html(modalContent);
+        applyValidation();
 
         // Initialize Bootstrap Select
         $(".selectpicker").selectpicker();
@@ -1116,20 +1155,66 @@ function generateCheckboxOptions(answers, questionId) {
 //   }
 // );
 
-function generateTextInput() {
+function generateTextInput(validated) {
+  let validationClass = "";
+  switch (validated) {
+    case 1:
+      validationClass = "all-allowed";
+      break;
+    case 2:
+      validationClass = "only-numbers";
+      break;
+    case 3:
+      validationClass = "only-alphabets";
+      break;
+    case 4:
+      validationClass = "alphabets-numbers";
+      break;
+  }
   return `
     <div class="col-xl-7 col-lg-12 col-sm-12 col-xs-12 colmspadding">
-      <input type="text" class="form-control" placeholder="Enter Your Answer">
+      <input type="text" class="form-control ${validationClass}" placeholder="Enter Your Answer">
     </div>
   `;
 }
 
-function generateTextareaInput() {
+function generateTextareaInput(validated) {
+  let validationClass = "";
+  switch (validated) {
+    case 1:
+      validationClass = "all-allowed";
+      break;
+    case 2:
+      validationClass = "only-numbers";
+      break;
+    case 3:
+      validationClass = "only-alphabets";
+      break;
+    case 4:
+      validationClass = "alphabets-numbers";
+      break;
+  }
   return `
     <div class="col-xl-7 col-lg-12 col-sm-12 col-xs-12 colmspadding">
-      <textarea class="form-control textareasize" placeholder="Enter Your Answer"></textarea>
+      <textarea class="form-control textareasize ${validationClass}" placeholder="Enter Your Answer"></textarea>
     </div>
   `;
+}
+function applyValidation() {
+  $("input.form-control, textarea.form-control").on("input", function () {
+    let value = $(this).val();
+    const validationClass = $(this).attr("class");
+
+    if (validationClass.includes("only-numbers")) {
+      value = value.replace(/[^0-9]/g, "");
+    } else if (validationClass.includes("only-alphabets")) {
+      value = value.replace(/[^a-zA-Z]/g, "");
+    } else if (validationClass.includes("alphabets-numbers")) {
+      value = value.replace(/[^a-zA-Z0-9]/g, "");
+    }
+
+    $(this).val(value);
+  });
 }
 
 function generateSelectOptions(answers) {
@@ -1428,7 +1513,16 @@ function updateRow(questionId) {
   var description = $("#description").val();
   var answerSelect = $("#answerSelect").val();
   var requireAnswer = $("#reqans").prop("checked") ? "Yes" : "No";
-
+  var validateId;
+  if (
+    $("#validatans").is(":checked") &&
+    (questionObject.answerSelect == 4 || questionObject.answerSelect == 5)
+  ) {
+    console.log($("#validatans").is(":checked"));
+    validateId = $("#validateDropdown option:selected").val();
+  } else {
+    validateId = 0;
+  }
   // Get the input values for the selected answer type
   var inputValues = [];
   let firstInputValue;
@@ -1502,6 +1596,7 @@ function updateRow(questionId) {
   questionObject.description = description;
   questionObject.answerSelect = answerSelect;
   questionObject.requireAnswer = requireAnswer;
+  questionObject.validateId = validateId;
   questionObject.inputValues = inputValues;
 
   // Update the corresponding row in the DataTable
@@ -1627,7 +1722,13 @@ function editQuestionWithForm(questionId) {
   $("#answerSelect").val(questionObject.answerSelect); // Set the answer type select element
   $("#answerSelect").selectpicker("refresh"); // Refresh the selectpicker to update the selected option
   $("#reqans").prop("checked", questionObject.requireAnswer === "Yes");
-
+  var validated = questionObject.validateId;
+  if (validated != 0) {
+    $("#validatans").prop("checked", true);
+    $(".showanswershouldbe").show();
+    $("#validateDropdown").val(validated);
+    $("#validateDropdown").selectpicker("refresh");
+  }
   var addNewRow =
     "<tr><td class='text-center border-0' width='5%'><i class='fa fa-arrow-right' aria-hidden='true'></i></td><td class='border-0 p-1'><div class='form-group mb-0'><input type='text' class='form-control' placeholder='Enter an answer choice in English'></div></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceadd'><i class='fa fa-plus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceremove'><i class='fa fa-minus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td></tr>";
   var addNewRowForMultiChoice =
@@ -1686,6 +1787,12 @@ function editQuestionWithForm(questionId) {
       }
 
       $(".multichoicedata").show();
+      break;
+    case 4: // No Answer
+      $(".hidetextvalidation").show();
+      break;
+    case 5: // No Answer
+      $(".hidetextvalidation").show();
       break;
     case 6: // Single Select Dropdown
       var singleSelectContainer = $(".singleselectdata tbody");
@@ -1762,7 +1869,17 @@ function updateQuestionFormTime(questionId) {
   } else {
     questionObject.requireAnswer = $("#reqans").is(":checked") ? "Yes" : "No";
   }
-
+  var validateId;
+  if (
+    $("#validatans").is(":checked") &&
+    (questionObject.answerSelect == 4 || questionObject.answerSelect == 5)
+  ) {
+    console.log($("#validatans").is(":checked"));
+    validateId = $("#validateDropdown option:selected").val();
+  } else {
+    validateId = 0;
+  }
+  questionObject.validateId = validateId;
   // Update the answers
   let newAnswers = [];
   let firstInputValue;
@@ -1941,6 +2058,19 @@ function getDataFromModel() {
   var description = $("#description").val().trim();
   var answerSelect = $("#answerSelect").val().trim();
   var requireAnswer = $("#reqans").is(":checked") ? "Yes" : "No";
+  var validateId;
+  if (
+    $("#validatans").is(":checked") &&
+    (answerSelect == 4 || answerSelect == 5)
+  ) {
+    console.log($("#validatans").is(":checked"));
+    validateId = $("#validateDropdown option:selected").val();
+  } else {
+    validateId = 0;
+  }
+  if (answerSelect == 1) {
+    requireAnswer = "No"; // Ensure requireAnswer is "No" for answerSelect = 1
+  }
   let inputValues = [];
 
   // Depending on the answerSelect value, gather input values
@@ -2059,6 +2189,7 @@ function getDataFromModel() {
     requireAnswer: answerSelect === "1" ? "No" : requireAnswer,
     answers: inputValues, // Update this line
     answerTypes: answerTypes,
+    validateId: validateId,
   };
 
   return formData;
@@ -2128,7 +2259,13 @@ function createQuestionUpdate(tempId) {
   $("#answerSelect").val(questionObject.answerSelect); // Set the answer type select element
   $("#answerSelect").selectpicker("refresh"); // Refresh the selectpicker to update the selected option
   $("#reqans").prop("checked", questionObject.requireAnswer === "Yes");
-
+  var validated = questionObject.validateId;
+  if (validated != 0) {
+    $("#validatans").prop("checked", true);
+    $(".showanswershouldbe").show();
+    $("#validateDropdown").val(validated);
+    $("#validateDropdown").selectpicker("refresh");
+  }
   var addNewRow =
     "<tr><td class='text-center border-0' width='5%'><i class='fa fa-arrow-right' aria-hidden='true'></i></td><td class='border-0 p-1'><div class='form-group mb-0'><input type='text' class='form-control' placeholder='Enter an answer choice in English'></div></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceadd'><i class='fa fa-plus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td><td class='text-center border-0 p-0' width='3%'><a href='javascript:void(0)' class='singlechoiceremove'><i class='fa fa-minus-square-o font_20 m-t-5 text-default' aria-hidden='true'></i></a></td></tr>";
   var addNewRowForMultiChoice =
@@ -2180,6 +2317,12 @@ function createQuestionUpdate(tempId) {
       }
 
       $(".multichoicedata").show();
+      break;
+    case "4": // No Answer
+      $(".hidetextvalidation").show();
+      break;
+    case "5": // No Answer
+      $(".hidetextvalidation").show();
       break;
     case "6": // Single Select Dropdown
       var singleSelectContainer = $(".singleselectdata tbody"); // Assuming tbody is used to contain rows
@@ -2400,6 +2543,7 @@ function updateForm(form_id) {
     compliancePeriod: $("#compliancePeriod").val().trim(),
     dateFrom: $("#date_from").val().trim(),
     textEnglish: $("#textEnglish").val().trim(),
+    active: $("#active").prop("checked") ? 1 : 0,
   };
 
   if (

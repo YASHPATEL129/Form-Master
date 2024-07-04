@@ -5,6 +5,7 @@ import com.formManagement.consts.ErrorKeys;
 import com.formManagement.consts.Message;
 import com.formManagement.exception.NotFoundException;
 import com.formManagement.param.Form;
+import com.formManagement.param.PreviewAdminParam;
 import com.formManagement.param.Question;
 import com.formManagement.param.UpdateFormRequest;
 import com.formManagement.response.CompletedFormResponse;
@@ -105,6 +106,7 @@ public class FormServiceImpl extends BaseService implements FormService  {
                     .setDescription(question.getDescription())
                     .setAnswerSelect(Integer.parseInt(question.getAnswerSelect()))
                     .setRequireAnswer(question.getRequireAnswer().equals("Yes") ? 1 : 0)
+                    .setValidateId(question.getValidateId())
                     .setForm(savedForm);
 
             mstFormQuestionRepository.save(mstFormQuestion);
@@ -186,6 +188,7 @@ public class FormServiceImpl extends BaseService implements FormService  {
             questionDTO.setDescription(question.getDescription());
             questionDTO.setRequireAnswer(question.getRequireAnswer().equals(1) ? "Yes" : "No");
             questionDTO.setAnswerSelect(question.getAnswerSelect());
+            questionDTO.setValidateId(question.getValidateId());
             String answerType = answersRepository.getAnswerTypes(Long.valueOf(question.getAnswerSelect()));
             questionDTO.setAnswerTypes(answerType);
             List<FormDetails.QuestionDTO.AnswerDTO> answerDTOs = answers.stream()
@@ -241,6 +244,7 @@ public class FormServiceImpl extends BaseService implements FormService  {
                     existingForm.setEffectiveDate(params.getFormDetails().getDateFrom());
                     existingForm.setText(params.getFormDetails().getTextEnglish());
                     existingForm.setModifyBy(currentSession.getId());
+                    existingForm.setActive(params.getFormDetails().getActive());
                 } catch (Exception e) {
                     throw new RuntimeException("Error while updating form details", e);
                 }
@@ -257,6 +261,7 @@ public class FormServiceImpl extends BaseService implements FormService  {
                                 question.setQuestionName(questionRequest.getQuestionName());
                                 question.setDescription(questionRequest.getDescription());
                                 question.setAnswerSelect(questionRequest.getAnswerSelect());
+                                question.setValidateId(questionRequest.getValidateId());
                                 question.setRequireAnswer("Yes".equals(questionRequest.getRequireAnswer()) ? 1 : 0);
                                 question.setIsDeleted(false);
                                 mstFormQuestionRepository.save(question);
@@ -290,6 +295,7 @@ public class FormServiceImpl extends BaseService implements FormService  {
                     question.setDescription(questionRequest.getDescription());
                     question.setAnswerSelect(questionRequest.getAnswerSelect());
                     question.setRequireAnswer("Yes".equals(questionRequest.getRequireAnswer()) ? 1 : 0);
+                    question.setValidateId(questionRequest.getValidateId());
                     question.setIsDeleted(false);
                     mstFormQuestionRepository.save(question);
                     if ((questionRequest.getAnswers()).size() > 0) {
@@ -516,6 +522,75 @@ public class FormServiceImpl extends BaseService implements FormService  {
         response.setQuestions(questionDTOs);
         return response;
 
+    }
+
+    @Override
+    public List<Object> getCompleteFormAdmin() {
+        return userFillFormDateRepository.getFillFormAdmin();
+    }
+
+    @Override
+    public CompletedFormResponse completeFormPreviewAdmin(Long formId, Long userId) {
+        // Retrieve all questions related to the form
+        List<MstFormQuestion> allQuestions = mstFormQuestionRepository.findByFormId(formId);
+
+        // Retrieve user form data for the current user and form
+        List<UserFormData> userFormDataList = userFormDataRepository.findByUserIdAndFormId(userId, formId);
+
+
+        // Create a map to store user form data by question ID for quick lookup
+        Map<Long, List<UserFormData>> userFormDataMap = new HashMap<>();
+        for (UserFormData userFormData : userFormDataList) {
+            userFormDataMap.computeIfAbsent(userFormData.getQuestion().getId(), k -> new ArrayList<>()).add(userFormData);
+        }
+
+        UserFillFormDate userFillFormDate = userFillFormDateRepository.getFillFormDate(userId, formId);
+        CompletedFormResponse response = new CompletedFormResponse();
+        response.setCompletedDate(userFillFormDate.getDate());
+        // Set the form title and text if user form data exists
+        if (!userFormDataList.isEmpty()) {
+            MstForm form = userFormDataList.get(0).getForm();
+            response.setTitle(form.getTitle());
+            response.setText(form.getText());
+        } else if (!allQuestions.isEmpty()) {
+            // Use the form details from the questions list if user form data is empty
+            MstForm form = allQuestions.get(0).getForm();
+            response.setTitle(form.getTitle());
+            response.setText(form.getText());
+        }
+
+        // Prepare list of question DTOs for the response
+        // Prepare list of question DTOs for the response
+        List<CompletedFormResponse.QuestionDTO> questionDTOs = new ArrayList<>();
+        for (MstFormQuestion question : allQuestions) {
+            List<UserFormData> userFormDataListForQuestion = userFormDataMap.getOrDefault(question.getId(), new ArrayList<>());
+            List<String> answers = new ArrayList<>();
+
+            if (!userFormDataListForQuestion.isEmpty()) {
+                for (UserFormData userFormData : userFormDataListForQuestion) {
+                    if (userFormData.getAnswers() != null) {
+                        // Fetch answer value from Answers table if answer ID is present
+                        answers.add(userFormData.getAnswers().getOptionText());
+                    } else {
+                        // If answer ID is not present, use value from UserFormData
+                        answers.add(userFormData.getValue() != null ? userFormData.getValue() : "User not filled");
+                    }
+                }
+            } else {
+                // If no userFormData exists for this question, indicate user has not filled it
+                answers.add("User not filled");
+            }
+
+            questionDTOs.add(new CompletedFormResponse.QuestionDTO(
+                    question.getQuestionLabel(),
+                    question.getQuestionName(),
+                    question.getRequireAnswer() == 1 ? "Yes" : "No",
+                    answers
+            ));
+        }
+
+        response.setQuestions(questionDTOs);
+        return response;
     }
 
     public void getLoginUser(String Token) {

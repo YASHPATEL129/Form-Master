@@ -41,9 +41,9 @@ public class User implements UserDetails {
 
     private String gender;
 
-    private String validForm;
+    private LocalDateTime validForm;
 
-    private String validTo;
+    private LocalDateTime validTo;
 
     private String role;
 

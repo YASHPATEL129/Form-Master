@@ -23,7 +23,7 @@ public class AccountServiceController {
     private AccountService accountService;
 
     @PostMapping("/signup")
-    public ResponseEntity<Success<?>> signUp(@RequestParam("Image") MultipartFile image,
+    public ResponseEntity<Success<?>> signUp(@RequestParam(value = "Image",required = false)  MultipartFile image,
                                              @RequestParam("data") @NotBlank @Validated String param ,
                                              HttpServletRequest request,
                                              HttpServletResponse response) throws IOException {
@@ -78,7 +78,7 @@ public class AccountServiceController {
     public ResponseEntity<Success<?>> updateUserDetails(@PathVariable Long id,
                                                         @RequestParam(value = "Image",required = false)  MultipartFile image,
                                                         HttpServletRequest request,
-                                             @RequestParam("data") @NotBlank @Validated String param) throws IOException {
+                                             @RequestParam("data") String param) throws IOException {
 
         accountService.updateUser(request ,id, param, image);
         ResponseEntity.BodyBuilder respBuilder = ResponseEntity.ok();
@@ -94,6 +94,16 @@ public class AccountServiceController {
         Success<?> success = new Success<>();
         success.setData(accountService.getAllUsersBySearch(role,searchValue));
         success.setMessage(Message.DATA_GET_SUCCESSFUL);
+        return respBuilder.body(success);
+    }
+
+    @PostMapping("/bulkUpload")
+    public ResponseEntity<Success<?>> bulkUpload(@RequestParam("file") MultipartFile file,HttpServletRequest request) throws IOException {
+
+        accountService.createUserByCSV(request , file);
+        ResponseEntity.BodyBuilder respBuilder = ResponseEntity.ok();
+        Success<?> success = new Success<>();
+        success.setMessage(Message.ALL_USER_CREATED);
         return respBuilder.body(success);
     }
 }

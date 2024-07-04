@@ -1,6 +1,7 @@
 package com.formManagement.service;
 
 import com.formManagement.param.Form;
+import com.formManagement.param.PreviewAdminParam;
 import com.formManagement.param.Question;
 import com.formManagement.param.UpdateFormRequest;
 import com.formManagement.response.CompletedFormResponse;
@@ -41,5 +42,9 @@ public interface FormService {
     List<Object> getCompleteForm(HttpServletRequest request);
 
     CompletedFormResponse completeFormPreview(HttpServletRequest request, Long id);
+
+    List<Object> getCompleteFormAdmin();
+
+    CompletedFormResponse completeFormPreviewAdmin(Long formId , Long userId);
 
 }

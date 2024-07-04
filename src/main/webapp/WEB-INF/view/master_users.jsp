@@ -223,6 +223,7 @@
 
                             <a
                               class="show-details-table btn btn-danger text-white btn-padding ml-1"
+                              onclick="resetbtn()"
                               ><i class="fa fa-refresh mr-2"></i>Reset</a
                             >
                           </div>
@@ -243,12 +244,22 @@
                     <div class="col-xl-8 col-lg-8 col-sm-8">
                       <h5 class="mb-0 font-bold m-t-5">Users</h5>
                     </div>
+
                     <div class="col-xl-4 col-lg-4 col-sm-4">
                       <a
                         href="javascript:void(0)"
                         class="btn btn-warning waves-effect float-right btn-padding client_add_btn"
                         id="addUser"
                         ><i class="fa fa-plus"></i> Add Users</a
+                      >
+
+                      <a
+                        href="javascript:void(0)"
+                        class="btn btn-warning waves-effect float-right btn-padding"
+                        style="margin-right: 10px"
+                        data-toggle="modal"
+                        data-target="#uploadModal"
+                        >Upload User File</a
                       >
                     </div>
                   </div>
@@ -325,7 +336,9 @@
                         name="file"
                         style="opacity: 0; right: 0; position: absolute"
                         onchange="readURL(this)"
+                        accept="image/png, image/gif, image/jpeg"
                         id="inputImage"
+                        data-status="nochange"
                       />
                     </div>
 
@@ -432,8 +445,8 @@
                             id="gender"
                           >
                             <option value="" selected="selected">Select</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
                           </select>
                         </div>
                       </div>
@@ -550,6 +563,50 @@
     </div>
     <!-- end wrapper -->
 
+    <!-- Modal -->
+    <div
+      class="modal fade"
+      id="uploadModal"
+      tabindex="-1"
+      aria-labelledby="uploadModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="uploadModalLabel">Upload Excel File</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form id="modalUploadForm">
+              <div class="form-group">
+                <label for="excelFile">Choose Excel file</label>
+                <input
+                  type="file"
+                  class="form-control-file"
+                  id="excelFile"
+                  accept=".xlsx, .xls"
+                />
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary btn-block"
+                onclick="uploadExcelFile()"
+              >
+                Upload
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="assets/custom/js/footer.js"></script>
 
     <!-- jQuery  -->
@@ -597,13 +654,23 @@
         clearBtn: true,
       });
 
-      $("#valid_to").closest("div").datepicker({
-        autoclose: true,
-        todayHighlight: true,
-        format: "dd/mm/yyyy",
-        clearBtn: true,
-      });
+      // $("#valid_to").closest("div").datepicker({
+      //   autoclose: true,
+      //   todayHighlight: true,
+      //   format: "dd/mm/yyyy",
+      //   clearBtn: true,
+      // });
 
+      $("#valid_from").change(function () {
+        validFrom = $("#valid_from").val();
+        $("#valid_to").closest("div").datepicker({
+          autoclose: true,
+          //  todayHighlight: true,
+          format: "dd/mm/yyyy",
+          startDate: validFrom,
+          clearBtn: true,
+        });
+      });
       $("#users_datatable").DataTable({
         destroy: true,
         scrollX: true,

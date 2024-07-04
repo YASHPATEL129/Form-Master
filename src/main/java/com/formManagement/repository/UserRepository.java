@@ -15,8 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Boolean existsByEmail(String email);
 
-    @Query(nativeQuery = true , value = "SELECT * FROM user WHERE active != 9")
-    List<User> getAllUsers();
+    @Query(nativeQuery = true , value = "SELECT u.first_name, u.last_name, u.email, u.contact, DATE_FORMAT(u.valid_form, '%d/%m/%Y') AS valid_form, DATE_FORMAT(u.valid_to, '%d/%m/%Y') AS valid_to, u.gender , u.role , u.active, u.image_name, u.id FROM user u WHERE u.active != 9")
+    List<Object> getAllUsers();
 
     @Query(nativeQuery = true , value = "SELECT * FROM user WHERE active != 9 AND email = :email")
     User findByEmailWithActive(String email);
@@ -36,17 +36,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 //    List<User> findByRoleAndSearchValue(@Param("role") String role, @Param("searchValue") String searchValue);
 
 
-    @Query(nativeQuery = true, value = "SELECT * FROM user WHERE " +
+    @Query(nativeQuery = true, value = "SELECT u.first_name, u.last_name, u.email, u.contact, u.valid_form, u.valid_to, u.gender ,u.role , u.active, u.image_name, u.id FROM user u WHERE " +
             "(:role IS NULL OR role = :role) AND " +
             "(:searchValue IS NULL OR " +
-            "contact LIKE CONCAT('%', :searchValue, '%') OR " +
-            "email LIKE CONCAT('%', :searchValue, '%') OR " +
-            "first_name LIKE CONCAT('%', :searchValue, '%') OR " +
-            "gender LIKE CONCAT('%', :searchValue, '%') OR " +
-            "last_name LIKE CONCAT('%', :searchValue, '%') OR " +
-            "role LIKE CONCAT('%', :searchValue, '%') OR " +
-            "valid_form LIKE CONCAT('%', :searchValue, '%') OR " +
-            "valid_to LIKE CONCAT('%', :searchValue, '%'))")
-    List<User> findByRoleAndSearchValue(@Param("role") String role, @Param("searchValue") String searchValue);
+            "u.contact LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.email LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.first_name LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.gender LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.last_name LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.role LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.valid_form LIKE CONCAT('%', :searchValue, '%') OR " +
+            "u.valid_to LIKE CONCAT('%', :searchValue, '%'))")
+    List<Object> findByRoleAndSearchValue(@Param("role") String role, @Param("searchValue") String searchValue);
 
 }

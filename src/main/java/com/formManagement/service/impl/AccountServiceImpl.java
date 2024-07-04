@@ -16,6 +16,8 @@ import com.formManagement.service.AccountService;
 import com.formManagement.utils.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,16 +27,19 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.*;
 
 
 @Service
@@ -66,7 +71,7 @@ public class AccountServiceImpl implements AccountService {
         String accessToken = request.getHeader("Authorization");
         String jwtToken = accessToken.substring(7);
         getLoginUser(jwtToken);
-        String imageName = image.getOriginalFilename();
+
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> signUp = mapper.readValue(param, Map.class);
         String email = ((String) signUp.get("email")).trim();
@@ -74,8 +79,14 @@ public class AccountServiceImpl implements AccountService {
         if (exists){
             throw new InvalidCredentialsException(Message.EMAIL_ALREADY_EXIST , ErrorKeys.EMAIL_ALREADY_EXIST);
         }
+        String imageName;
+        if (image != null && !image.isEmpty()){
+            imageName = image.getOriginalFilename();
+            Files.copy(image.getInputStream(), Path.of(UPLOAD_DIR + File.separator + imageName), StandardCopyOption.REPLACE_EXISTING);
+        }else {
+            imageName = "default_user.png";
+        }
 
-        Files.copy(image.getInputStream(), Path.of(UPLOAD_DIR + File.separator + imageName), StandardCopyOption.REPLACE_EXISTING);
         String password = SystemHelper.generatePassword();
         User user = new User()
                 .setFirstName((String) signUp.get("firstName"))
@@ -85,8 +96,8 @@ public class AccountServiceImpl implements AccountService {
                 .setContact((String) signUp.get("contact"))
                 .setRole((String) signUp.get("role"))
                 .setPassword(passwordEncoder.encode(password))
-                .setValidForm((String) signUp.get("validForm"))
-                .setValidTo((String) signUp.get("validTo"))
+                .setValidForm((LocalDateTime) signUp.get("validForm"))
+                .setValidTo((LocalDateTime) signUp.get("validTo"))
                 .setImageName(imageName)
                 .setCreateBy(currentSession.getId());
         userRepository.save(user);
@@ -120,7 +131,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<User> getAllUsers() {
+    public List<Object> getAllUsers() {
         return userRepository.getAllUsers();
     }
 
@@ -150,7 +161,8 @@ public class AccountServiceImpl implements AccountService {
                     .setGender(existingUser.getGender())
                     .setValidForm(existingUser.getValidForm())
                     .setValidTo(existingUser.getValidTo())
-                    .setActive(existingUser.getActive());
+                    .setActive(existingUser.getActive())
+                    .setImageName(existingUser.getImageName());
         }else {
             throw new NotFoundException(Message.USER_NOT_FOUND, ErrorKeys.USER_NOT_FOUND);
         }
@@ -173,20 +185,28 @@ public class AccountServiceImpl implements AccountService {
                     throw new InvalidCredentialsException(Message.EMAIL_ALREADY_EXIST, ErrorKeys.EMAIL_ALREADY_EXIST);
                 }
             }
-            String imageName = existingUser.getImageName();
-            if (image != null && !image.isEmpty()){
+            String imageState = (String) signUp.get("imageState");
+            String imageName;
+            if (Objects.equals(imageState, "removed")){
+                imageName = "default_user.png";
+            }else if(Objects.equals(imageState, "uploaded")){
                 imageName = image.getOriginalFilename();
                 Files.copy(image.getInputStream(), Path.of(UPLOAD_DIR + File.separator + imageName), StandardCopyOption.REPLACE_EXISTING);
+            } else {
+                imageName = existingUser.getImageName();
             }
+
+
             existingUser.setFirstName((String) signUp.get("firstName"));
             existingUser.setLastName((String) signUp.get("lastName"));
             existingUser.setEmail(email);
             existingUser.setGender((String) signUp.get("gender"));
             existingUser.setContact((String) signUp.get("contact"));
             existingUser.setRole((String) signUp.get("role"));
-            existingUser.setValidForm((String) signUp.get("validForm"));
-            existingUser.setValidTo((String) signUp.get("validTo"));
+            existingUser.setValidForm((LocalDateTime) signUp.get("validForm"));
+            existingUser.setValidTo((LocalDateTime) signUp.get("validTo"));
             existingUser.setImageName(imageName);
+            existingUser.setActive((Integer) signUp.get("isAction"));
             existingUser.setModifyBy(currentSession.getId());
             userRepository.save(existingUser);
 
@@ -197,12 +217,160 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<User> getAllUsersBySearch(String role, String searchValue) {
+    public List<Object> getAllUsersBySearch(String role, String searchValue) {
         if (role.isEmpty()){
             role = null;
         }
         return userRepository.findByRoleAndSearchValue(role, searchValue);
     }
+
+    @Override
+    public void createUserByCSV(HttpServletRequest request, MultipartFile file) throws IOException {
+        List<User> users = parseXLSX(request, file);
+        validateUsers(users);
+        userRepository.saveAll(users);
+    }
+
+    private List<User> parseXLSX(HttpServletRequest request, MultipartFile file) throws IOException {
+        String accessToken = request.getHeader("Authorization");
+        String jwtToken = accessToken.substring(7);
+        getLoginUser(jwtToken);
+        List<User> users = new ArrayList<>();
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            int firstRowNum = sheet.getFirstRowNum();
+            int lastRowNum = sheet.getLastRowNum();
+
+            for (int i = firstRowNum + 1; i <= lastRowNum; i++) {
+                Row row = sheet.getRow(i);
+                if (row == null) {
+                    continue;
+                }
+                User user = new User();
+                user.setFirstName(getCellValue(row.getCell(0)));
+                user.setLastName(getCellValue(row.getCell(1)));
+                user.setEmail(getCellValue(row.getCell(2)));
+                user.setContact(getCellValue(row.getCell(3)));
+                user.setGender(getCellValue(row.getCell(4)).toUpperCase());
+                user.setValidForm(parseToLocalDateTime(getCellValue(row.getCell(5))));
+                user.setValidTo(parseToLocalDateTime(getCellValue(row.getCell(6))));
+                user.setRole(getCellValue(row.getCell(7)).toUpperCase());
+                user.setCreateBy(currentSession.getId());
+                user.setImageName("default_user.png");
+                users.add(user);
+            }
+        }
+        return users;
+    }
+
+    private String getCellValue(Cell cell) {
+        if (cell == null) {
+            return "";
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue().trim();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    LocalDateTime localDateTime = cell.getLocalDateTimeCellValue();
+                    return localDateTime.format(DATE_FORMATTER);
+                } else {
+                    return BigDecimal.valueOf(cell.getNumericCellValue()).toPlainString();
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            default:
+                return "";
+        }
+    }
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private LocalDateTime parseToLocalDateTime(String dateString) {
+        if (dateString == null || dateString.isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(dateString, DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void validateUsers(List<User> users) {
+        int row = 2;
+        for (User user : users) {
+
+            // FirstName
+            if (user.getFirstName().isEmpty()) {
+                throw new InvalidCredentialsException(Message.FIRSTNAME_NULL, ErrorKeys.FIRSTNAME_NULL, new Object[]{row});
+            }
+            if (!user.getFirstName().matches("[a-zA-Z]+")) {
+                throw new InvalidCredentialsException(Message.FIRSTNAME_FORMAT, ErrorKeys.FIRSTNAME_FORMAT, new Object[]{row, user.getFirstName()});
+            }
+            if (user.getFirstName().length() > 15) {
+                throw new InvalidCredentialsException(Message.FIRSTNAME_LENGTH, ErrorKeys.FIRSTNAME_LENGTH, new Object[]{row, user.getFirstName()});
+            }
+
+            // LastName
+            if (user.getLastName().isEmpty()) {
+                throw new InvalidCredentialsException(Message.LASTNAME_NULL, ErrorKeys.LASTNAME_NULL, new Object[]{row});
+            }
+            if (!user.getLastName().matches("[a-zA-Z]+")) {
+                throw new InvalidCredentialsException(Message.LASTNAME_FORMAT, ErrorKeys.LASTNAME_FORMAT, new Object[]{row, user.getLastName()});
+            }
+            if (user.getLastName().length() > 15) {
+                throw new InvalidCredentialsException(Message.LASTNAME_LENGTH, ErrorKeys.LASTNAME_LENGTH, new Object[]{row, user.getLastName()});
+            }
+
+            // Email
+            if (user.getEmail().isEmpty()) {
+                throw new InvalidCredentialsException(Message.EMAIL_NULL, ErrorKeys.EMAIL_NULL, new Object[]{row});
+            }
+            if (!user.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}$")) {
+                throw new InvalidCredentialsException(Message.EMAIL_FORMAT, ErrorKeys.EMAIL_FORMAT, new Object[]{row, user.getEmail()});
+            }
+            Boolean exists = userRepository.existsByEmail(user.getEmail());
+            if (exists){
+                throw new InvalidCredentialsException(Message.EMAIL_ALREADY_EXIST_BULK , ErrorKeys.EMAIL_ALREADY_EXIST_BULK, new Object[]{row, user.getEmail()});
+            }
+
+            // Contact
+            if (user.getContact() != null && !user.getContact().isEmpty()) {
+                if (!user.getContact().matches("\\d+")) {
+                    throw new InvalidCredentialsException(Message.CONTACT_FORMAT , ErrorKeys.CONTACT_FORMAT , new Object[]{row, user.getContact()});
+                }
+                if (user.getContact().length() != 10) {
+                    throw new InvalidCredentialsException(Message.CONTACT_LENGTH , ErrorKeys.CONTACT_LENGTH , new Object[]{row});
+                }
+            }
+
+            // Gender
+            if (user.getGender().isEmpty()) {
+                throw new InvalidCredentialsException(Message.GENDER_NULL , ErrorKeys.GENDER_NULL, new Object[]{row});
+            }
+            if (!user.getGender().equalsIgnoreCase("male") && !user.getGender().equalsIgnoreCase("female")) {
+                throw new InvalidCredentialsException(Message.GENDER_FORMAT, ErrorKeys.GENDER_FORMAT, new Object[]{row, user.getGender()});
+            }
+
+            // Role
+            if (user.getRole().isEmpty()) {
+                throw new InvalidCredentialsException(Message.ROLE_NULL, ErrorKeys.ROLE_NULL, new Object[]{row});
+            }
+            if (!user.getRole().equalsIgnoreCase("admin") && !user.getRole().equalsIgnoreCase("user")) {
+                throw new InvalidCredentialsException(Message.ROLE_FORMAT, ErrorKeys.ROLE_FORMAT,new Object[]{row, user.getRole()});
+            }
+
+
+            if (user.getValidForm() != null && user.getValidTo() != null){
+                if (user.getValidForm().isAfter(user.getValidTo())) {
+                     throw new InvalidCredentialsException(Message.DATE_VALIDATE , ErrorKeys.DATE_VALIDATE, new  Object[]{row, user.getEmail()});
+                }
+            }
+            row++;
+        }
+    }
+
     public void getLoginUser(String Token) {
         String email = jwtUtil.extractUsername(Token);
         Optional<User> user = userRepository.findByEmail(email);

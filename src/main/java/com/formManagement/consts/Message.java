@@ -5,6 +5,8 @@ public interface Message {
     // User
     String CREATE_SUCCESSFUL = "Create successfully";
 
+    String ALL_USER_CREATED = "All users created successfully";
+
     String USER_UPDATE_SUCCESSFUL = "User update successfully";
 
     String INCORRECT_ACCOUNT_OR_PASSWORD = "Invalid account or password";
@@ -50,4 +52,37 @@ public interface Message {
     String MESSAGE_5 = "Message 5";
 
     String  MESSAGE_6 = "Message 6";
+
+    //excel file
+    String FIRSTNAME_NULL = "firstname.null";
+
+    String FIRSTNAME_FORMAT = "firstname.format";
+
+    String FIRSTNAME_LENGTH = "firstname.length";
+
+    String LASTNAME_NULL = "lastname.null";
+
+    String LASTNAME_FORMAT = "lastname.format";
+
+    String LASTNAME_LENGTH = "lastname.length";
+
+    String ROLE_NULL = "role.null";
+
+    String ROLE_FORMAT = "role.format";
+
+    String EMAIL_NULL = "email.null";
+
+    String EMAIL_FORMAT = "email.format";
+
+    String EMAIL_ALREADY_EXIST_BULK = "email.already.exist.bulk";
+
+    String GENDER_NULL = "gender.null";
+
+    String GENDER_FORMAT = "gender.format";
+
+    String CONTACT_FORMAT = "contact.format";
+
+    String CONTACT_LENGTH = "contact.length";
+
+    String DATE_VALIDATE = "date.validate";
 }

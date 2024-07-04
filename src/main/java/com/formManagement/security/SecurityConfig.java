@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/javascript/**",
                                 "/image/**" ,"/v1/signIn","/fillForms","/masterForm", "/masterUser",  "/completeForms", "/profile").permitAll()
-                        .requestMatchers("/v1/signup").hasAnyAuthority("ADMIN")
+                        .requestMatchers("/v1/signup","/getFormDetails","/v1/getAllUsers", "/formPreviewAdmin","/v1/bulkUpload").hasAnyAuthority("ADMIN")
+                        .requestMatchers("/getCompleteForm").hasAnyAuthority("ADMIN", "USER")
                         .anyRequest().authenticated())
                 .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider()).addFilterBefore(

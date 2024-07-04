@@ -34,4 +34,6 @@ public class Question {
 
     @NotNull
     private List<String> inputValues;
+
+    private int validateId;
 }

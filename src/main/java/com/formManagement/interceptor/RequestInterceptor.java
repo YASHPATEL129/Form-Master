@@ -54,7 +54,7 @@ public class RequestInterceptor implements HandlerInterceptor {
 //            Optional<User> user = userRepository.findByEmail(email);
 //            if (user.isPresent()) {
 //                User existingUser = user.get();
-//                currentSession.setEmail(email);
+//                m.setEmail(email);
 //                currentSession.setId(existingUser.getId());
 //                currentSession.setFirstName(existingUser.getFirstName());
 //                currentSession.setLastName(existingUser.getLastName());

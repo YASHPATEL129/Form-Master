@@ -30,6 +30,8 @@ public class MstFormQuestion {
 
     private Boolean isDeleted = false;
 
+    private int validateId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "form_id", nullable = false)
     private MstForm form;

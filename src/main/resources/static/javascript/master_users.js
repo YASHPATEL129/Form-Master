@@ -7,12 +7,18 @@ $(document).ready(function () {
   getAllUsers();
 });
 
+function resetbtn() {
+  $("#query").val("");
+  $("#searchRole").val("");
+  $("#searchRole").selectpicker("refresh");
+  getAllUsers();
+}
 function getUserBySerach() {
   $("#users_datatable").empty();
 
   var role = $("#searchRole").val().trim();
 
-  if (role == "") {
+  if (role === "") {
     role = null;
   }
 
@@ -46,7 +52,22 @@ function getUserBySerach() {
           response.message === "Data get successful" &&
           Array.isArray(response.data)
         ) {
-          return response.data;
+          // Map the array to objects
+          return response.data.map((item, index) => {
+            return {
+              firstName: item[0],
+              lastName: item[1],
+              email: item[2],
+              contact: item[3],
+              validFrom: item[4],
+              validTo: item[5],
+              gender: item[6],
+              role: item[7],
+              active: item[8],
+              userId: item[10], // Assuming an incremental ID for simplicity
+              imageName: item[9], // Assuming a default image name for simplicity
+            };
+          });
         } else {
           console.error("Invalid response format: ", response);
           return [];
@@ -61,19 +82,17 @@ function getUserBySerach() {
         data: null,
         render: function (data, type, row) {
           return `<h2 class="table-avatar">
-                                
-                                  <a href="javascript:void(0)" data-toggle="popover" data-trigger="hover" data-html="true" data-placement="right"   data-template='<div class="popover fade bs-popover-right" role="tooltip" x-placement="right"><div class="arrow"></div><h3 class="popover-header p-0 border_radius6"></h3></div>' data-title="<img src='/image/${data.imageName}' width='150' height='150' class='border_radius6'>"     data-original-title=""
-                                  title="">
-                                    <img src='/image/${data.imageName}' alt='' class='img-radius avatar'/>
-                                </a>
-                                <span>${data.firstName} ${data.lastName}</span>
-                            </h2>`;
+                    <a href="javascript:void(0)" data-toggle="popover" data-trigger="hover" data-html="true" data-placement="right" data-template='<div class="popover fade bs-popover-right" role="tooltip" x-placement="right"><div class="arrow"></div><h3 class="popover-header p-0 border_radius6"></h3></div>' data-title="<img src='/image/${data.imageName}' width='150' height='150' class='border_radius6'>" data-original-title="" title="">
+                        <img src='/image/${data.imageName}' alt='' class='img-radius avatar'/>
+                    </a>
+                    <span>${data.firstName} ${data.lastName}</span>
+                </h2>`;
         },
         className: "text-center",
       },
       { data: "email" },
       { data: "contact" },
-      { data: "validForm" },
+      { data: "validFrom" },
       { data: "validTo" },
       { data: "gender" },
       { data: "role" },
@@ -89,15 +108,15 @@ function getUserBySerach() {
         orderable: false,
         render: function (data, type, row) {
           return `
-                        <a href="javascript:void(0)" class="text-success fa-size client_add_btn" data-toggle="tooltip" data-placement="bottom" title="Edit" onclick="editUser(${data.id})">
-                            <i class="fa fa-pencil"></i>
+                    <a href="javascript:void(0)" class="text-success fa-size client_add_btn" data-toggle="tooltip" data-placement="bottom" title="Edit" onclick="editUser(${data.userId})">
+                        <i class="fa fa-pencil"></i>
+                    </a>
+                    <span class="delete-user-alert">
+                        <a href="javascript:void(0)" class="text-danger fa-size" data-toggle="tooltip" data-placement="bottom" title="Delete" onclick="deletedUser(${data.userId})">
+                            <i class="fa fa-trash"></i>
                         </a>
-                        <span class="delete-user-alert">
-                            <a href="javascript:void(0)" class="text-danger fa-size" data-toggle="tooltip" data-placement="bottom" title="Delete" onclick="deletedUser(${data.id})">
-                                <i class="fa fa-trash"></i>
-                            </a>
-                        </span>
-                    `;
+                    </span>
+                `;
         },
       },
     ],
@@ -109,6 +128,8 @@ function getUserBySerach() {
 }
 
 function getAllUsers() {
+  $("#users_datatable").empty();
+
   $("#users_datatable").DataTable({
     destroy: true,
     scrollX: true,
@@ -129,11 +150,27 @@ function getAllUsers() {
       headers: headers,
       dataSrc: function (response) {
         console.log("AJAX response: ", response); // Debugging response
+
         if (
           response.message === "Data get successful" &&
           Array.isArray(response.data)
         ) {
-          return response.data;
+          // Map the array to objects
+          return response.data.map((item, index) => {
+            return {
+              firstName: item[0],
+              lastName: item[1],
+              email: item[2],
+              contact: item[3],
+              validFrom: item[4],
+              validTo: item[5],
+              gender: item[6],
+              role: item[7],
+              active: item[8],
+              userId: item[10], // Assuming an incremental ID for simplicity
+              imageName: item[9], // Assuming a default image name for simplicity
+            };
+          });
         } else {
           console.error("Invalid response format: ", response);
           return [];
@@ -148,19 +185,17 @@ function getAllUsers() {
         data: null,
         render: function (data, type, row) {
           return `<h2 class="table-avatar">
-                                
-                                  <a href="javascript:void(0)" data-toggle="popover" data-trigger="hover" data-html="true" data-placement="right"   data-template='<div class="popover fade bs-popover-right" role="tooltip" x-placement="right"><div class="arrow"></div><h3 class="popover-header p-0 border_radius6"></h3></div>' data-title="<img src='/image/${data.imageName}' width='150' height='150' class='border_radius6'>"     data-original-title=""
-                                  title="">
-                                    <img src='/image/${data.imageName}' alt='' class='img-radius avatar'/>
-                                </a>
-                                <span>${data.firstName} ${data.lastName}</span>
-                            </h2>`;
+                    <a href="javascript:void(0)" data-toggle="popover" data-trigger="hover" data-html="true" data-placement="right" data-template='<div class="popover fade bs-popover-right" role="tooltip" x-placement="right"><div class="arrow"></div><h3 class="popover-header p-0 border_radius6"></h3></div>' data-title="<img src='/image/${data.imageName}' width='150' height='150' class='border_radius6'>" data-original-title="" title="">
+                        <img src='/image/${data.imageName}' alt='' class='img-radius avatar'/>
+                    </a>
+                    <span>${data.firstName} ${data.lastName}</span>
+                </h2>`;
         },
         className: "text-center",
       },
       { data: "email" },
       { data: "contact" },
-      { data: "validForm" },
+      { data: "validFrom" },
       { data: "validTo" },
       { data: "gender" },
       { data: "role" },
@@ -176,15 +211,15 @@ function getAllUsers() {
         orderable: false,
         render: function (data, type, row) {
           return `
-                        <a href="javascript:void(0)" class="text-success fa-size client_add_btn" data-toggle="tooltip" data-placement="bottom" title="Edit" onclick="editUser(${data.id})">
-                            <i class="fa fa-pencil"></i>
+                    <a href="javascript:void(0)" class="text-success fa-size client_add_btn" data-toggle="tooltip" data-placement="bottom" title="Edit" onclick="editUser(${data.userId})">
+                        <i class="fa fa-pencil"></i>
+                    </a>
+                    <span class="delete-user-alert">
+                        <a href="javascript:void(0)" class="text-danger fa-size" data-toggle="tooltip" data-placement="bottom" title="Delete" onclick="deletedUser(${data.userId})">
+                            <i class="fa fa-trash"></i>
                         </a>
-                        <span class="delete-user-alert">
-                            <a href="javascript:void(0)" class="text-danger fa-size" data-toggle="tooltip" data-placement="bottom" title="Delete" onclick="deletedUser(${data.id})">
-                                <i class="fa fa-trash"></i>
-                            </a>
-                        </span>
-                    `;
+                    </span>
+                `;
         },
       },
     ],
@@ -231,26 +266,21 @@ function valiedAddUser() {
     return false;
   }
 
-  if (contact == "") {
-    toastr.error("Please enter Contact");
-    return false;
-  }
-
   if (gender == "") {
     toastr.error("Please enter Gender");
-    return false;
-  }
-  if (valiedForm == "") {
-    toastr.error("Please enter Valid Form");
-    return false;
-  }
-  if (validTo == "") {
-    toastr.error("Please enter Valid To");
     return false;
   }
   if (role == "") {
     toastr.error("Please enter Role");
     return false;
+  }
+
+  if (contact != "") {
+    const contactRegex = /^\d{10}$/;
+    if (!contactRegex.test(contact)) {
+      toastr.error("Contact number must be exactly 10 digits.");
+      return false;
+    }
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -259,16 +289,12 @@ function valiedAddUser() {
     toastr.error("Please enter a valid email address.");
     return false;
   }
+
   return true;
 }
 
 function createUser() {
   if (valiedAddUser()) {
-    var image = $("#inputImage").val().trim();
-    if (image == "") {
-      toastr.error("Please select Image");
-      return false;
-    }
     var formData = new FormData();
     var userData = {
       firstName: document.getElementById("firstName").value,
@@ -335,6 +361,9 @@ function readURL(input) {
     var reader = new FileReader();
     reader.onload = function (e) {
       $("#userImage").attr("src", e.target.result).width(155).height(155);
+      document
+        .getElementById("inputImage")
+        .setAttribute("data-status", "uploaded"); // Update custom attribute
     };
     reader.readAsDataURL(input.files[0]);
   }
@@ -343,7 +372,8 @@ function readURL(input) {
 document.getElementById("clean").addEventListener("click", function () {
   document.getElementById("userImage").src =
     "assets/images/users/default_user.png";
-  document.getElementById("fileInput").value = ""; // Clear the file input
+  document.getElementById("inputImage").value = ""; // Clear the file input
+  document.getElementById("inputImage").setAttribute("data-status", "removed"); // Set custom attribute
 });
 
 function allowOnlyLetters(input) {
@@ -422,6 +452,7 @@ function editUser(userId) {
       var validForm = response.data.validForm;
       var validTo = response.data.validTo;
       var active = response.data.active;
+      var imageName = response.data.imageName;
 
       // Set the data to the modal inputs
       $("#firstName").val(firstName);
@@ -433,6 +464,8 @@ function editUser(userId) {
       $("#valid_from").val(validForm);
       $("#valid_to").val(validTo);
       $("#role").val(role);
+      $(".userimg").attr("src", `http://localhost:8080/image/${imageName}`);
+      $(".userimg").selectpicker("refresh");
       $("#role").trigger("change");
 
       if (active == 1) {
@@ -460,12 +493,16 @@ function updateUser(userId) {
       validForm: document.getElementById("valid_from").value,
       validTo: document.getElementById("valid_to").value,
       role: document.getElementById("role").value,
+      isAction: $("#active").prop("checked") ? 1 : 0,
+      imageState: document
+        .getElementById("inputImage")
+        .getAttribute("data-status"),
     };
 
     // Convert product data to JSON string
     var jsonData = JSON.stringify(userData);
     formData.append("data", jsonData);
-
+    console.log(JSON.stringify(userData));
     // Append image file
     var fileInput = document.getElementById("inputImage");
     if (fileInput.files.length > 0) {
@@ -493,4 +530,35 @@ function updateUser(userId) {
       },
     });
   }
+}
+
+function uploadExcelFile() {
+  var formData = new FormData();
+  var fileInput = document.getElementById("excelFile");
+  var excelFile = $("#excelFile").val();
+  if (!excelFile) {
+    toastr.error("Please select file.");
+    return;
+  }
+  if (fileInput.files.length > 0) {
+    formData.append("file", fileInput.files[0]);
+  }
+  $.ajax({
+    url: "/v1/bulkUpload",
+    type: "POST",
+    data: formData,
+    processData: false,
+    contentType: false,
+    headers: headers,
+    success: function (response) {
+      toastr.success(response.message);
+      $("#uploadModal").hide();
+      getAllUsers();
+    },
+    error: function (xhr) {
+      console.log(xhr);
+      var errorMessage = xhr.responseJSON.message;
+      toastr.error(errorMessage);
+    },
+  });
 }

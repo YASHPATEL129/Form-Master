@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.time.LocalDateTime;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,11 +24,13 @@ public class UserDetailsResponse {
 
     private String gender;
 
-    private String validForm;
+    private LocalDateTime validForm;
 
-    private String validTo;
+    private LocalDateTime validTo;
 
     private String role;
 
     private int active;
+
+    private String imageName;
 }
